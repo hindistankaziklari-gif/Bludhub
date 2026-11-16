@@ -1,90 +1,76 @@
--- BLUD HUB v1.1
--- Mobile Friendly Roblox GUI
+-- BLUD HUB ESP SYSTEM
 
 local Players = game:GetService("Players")
-local player = Players.LocalPlayer
+local LocalPlayer = Players.LocalPlayer
 
-local gui = Instance.new("ScreenGui")
-gui.Name = "BludHub"
-gui.ResetOnSpawn = false
-gui.Parent = player:WaitForChild("PlayerGui")
-
--- MAIN WINDOW
-local main = Instance.new("Frame")
-main.Name = "Main"
-main.Size = UDim2.new(0, 240, 0, 150)
-main.Position = UDim2.new(0.5, -120, 0.5, -75)
-main.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
-main.BorderSizePixel = 0
-main.Active = true
-main.Draggable = true
-main.Parent = gui
-
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 10)
-corner.Parent = main
-
-local stroke = Instance.new("UIStroke")
-stroke.Color = Color3.fromRGB(255, 120, 0)
-stroke.Thickness = 2
-stroke.Parent = main
-
--- TITLE
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 40)
-title.BackgroundTransparency = 1
-title.Text = "BLUD HUB"
-title.TextColor3 = Color3.fromRGB(255, 120, 0)
-title.TextSize = 23
-title.Font = Enum.Font.GothamBold
-title.Parent = main
-
--- ESP BUTTON
-local esp = Instance.new("TextButton")
-esp.Size = UDim2.new(0, 190, 0, 45)
-esp.Position = UDim2.new(0.5, -95, 0, 75)
-esp.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-esp.Text = "ESP: OFF"
-esp.TextColor3 = Color3.fromRGB(255, 255, 255)
-esp.TextSize = 17
-esp.Font = Enum.Font.GothamBold
-esp.Parent = main
-
-local buttonCorner = Instance.new("UICorner")
-buttonCorner.CornerRadius = UDim.new(0, 7)
-buttonCorner.Parent = esp
-
-local buttonStroke = Instance.new("UIStroke")
-buttonStroke.Color = Color3.fromRGB(255, 120, 0)
-buttonStroke.Thickness = 1.5
-buttonStroke.Parent = esp
-
--- ESP SYSTEM
 local enabled = false
-local highlight
+local highlights = {}
+
+local function addESP(target)
+    if target == LocalPlayer then return end
+    if not target.Character then return end
+
+    if highlights[target] then
+        highlights[target]:Destroy()
+    end
+
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "BludESP"
+    highlight.Adornee = target.Character
+
+    -- WHITE NEON OUTLINE
+    highlight.FillTransparency = 1
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+    highlight.OutlineTransparency = 0
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+
+    highlight.Parent = target.Character
+    highlights[target] = highlight
+end
+
+local function removeESP(target)
+    if highlights[target] then
+        highlights[target]:Destroy()
+        highlights[target] = nil
+    end
+end
+
+local function updateESP()
+    for _, target in ipairs(Players:GetPlayers()) do
+        if target ~= LocalPlayer then
+            if enabled then
+                addESP(target)
+            else
+                removeESP(target)
+            end
+        end
+    end
+end
+
+Players.PlayerAdded:Connect(function(target)
+    target.CharacterAdded:Connect(function()
+        task.wait(1)
+        if enabled then
+            addESP(target)
+        end
+    end)
+end)
+
+Players.PlayerRemoving:Connect(removeESP)
 
 esp.Activated:Connect(function()
     enabled = not enabled
-
     esp.Text = enabled and "ESP: ON" or "ESP: OFF"
-
-    if enabled then
-        local character = player.Character
-
-        if character then
-            highlight = Instance.new("Highlight")
-            highlight.FillTransparency = 1
-            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-            highlight.OutlineTransparency = 0
-            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-            highlight.Parent = character
-        end
-    else
-        if highlight then
-            highlight:Destroy()
-            highlight = nil
-        end
-    end
+    updateESP()
 end)
 
-print("BLUD HUB v1.1 loaded!")
+for _, target in ipairs(Players:GetPlayers()) do
+    if target ~= LocalPlayer then
+        target.CharacterAdded:Connect(function()
+            task.wait(1)
+            if enabled then
+                addESP(target)
+            end
+        end)
+    end
+end
